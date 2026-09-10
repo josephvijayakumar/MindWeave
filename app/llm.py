@@ -40,10 +40,16 @@ class AgyProvider(LLMProvider):
             "You must return a JSON list of objects. Each object must have: topic, kind (CREATE, UPDATE, CONTRADICTION, QUESTION), "
             "concept, explanation, reason, source_message_ids (list of integers matching provided IDs), confidence (0-1), related_concepts (list of objects with 'concept' and 'type' string fields. e.g. type='depends_on', 'contrasts_with', 'related_to')."
         )
-        prompt = f"{system_instruction}\n\nMessages:\n{json.dumps([{k: v for k, v in m.items() if k != 'sent_at'} for m in messages])}\n\nExisting Knowledge:\n{json.dumps([{k: v for k, v in k_obj.items() if k != 'created_at'} for k_obj in existing_knowledge])}"
+        prompt = f"{system_instruction}\n\nMessages:\n{json.dumps([{k: v for k, v in dict(m).items() if k != 'sent_at'} for m in messages])}\n\nExisting Knowledge:\n{json.dumps([{k: v for k, v in dict(k_obj).items() if k != 'created_at'} for k_obj in existing_knowledge])}"
         try:
             output = subprocess.check_output(["agy", "--print", prompt, "--output-format", "json"], text=True)
             data = json.loads(output)
+            if isinstance(data, dict) and "response" in data:
+                resp = data["response"].strip()
+                if resp.startswith("```json"): resp = resp[7:]
+                elif resp.startswith("```"): resp = resp[3:]
+                if resp.endswith("```"): resp = resp[:-3]
+                data = json.loads(resp.strip())
             if isinstance(data, dict):
                 for val in data.values():
                     if isinstance(val, list):
