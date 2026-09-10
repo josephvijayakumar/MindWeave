@@ -13,11 +13,11 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 
-from .db import Database
 from .google_docs import publish_review_document, sync_review_decisions
 import os
 from .llm import HeuristicProvider, GeminiProvider, AgyProvider
 from .parser import parse_whatsapp_export, parse_telegram_json
+from .obsidian import export_to_vault
 
 
 def _load_export(path: Path):
@@ -165,26 +165,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Knowledge document written to {args.output}")
         elif args.command == "export-obsidian":
             vault_dir = args.output if args.output else Path("MindWeave_Vault")
-            vault_dir.mkdir(parents=True, exist_ok=True)
-            items = database.all_knowledge()
-            relationships = database.relationships()
-            for item in items:
-                filename = "".join(c for c in item["concept"] if c.isalnum() or c in " -_").strip() + ".md"
-                filepath = vault_dir / filename
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write("---\n")
-                    f.write(f"topic: {item['topic']}\n")
-                    f.write(f"version: {item['version']}\n")
-                    f.write(f"confidence: {item['confidence']}\n")
-                    f.write("---\n\n")
-                    f.write(f"# {item['concept']}\n\n")
-                    f.write(f"{item['explanation']}\n\n")
-                    item_rels = [r for r in relationships if r['from_knowledge_id'] == item['id']]
-                    if item_rels:
-                        f.write("## Related Concepts\n")
-                        for r in item_rels:
-                            f.write(f"- **{r['relation_type'].replace('_', ' ').title()}**: [[{r['to_concept']}]]\n")
-            print(f"Exported {len(items)} concepts to Obsidian vault at {vault_dir.absolute()}")
+            export_to_vault(database, str(vault_dir))
+            print(f"Exported concepts to Obsidian vault at {Path(vault_dir).absolute()}")
         elif args.command == "publish-google-doc":
             url = publish_review_document(args.title, render_review_document(database), args.client_secrets, args.token)
             print(f"Google review document created: {url}")

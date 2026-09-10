@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from .db import Database
 from .llm import HeuristicProvider, GeminiProvider, AgyProvider
 from .parser import parse_whatsapp_export, parse_telegram_json
+from .obsidian import export_to_vault
 
 DATA_PATH = os.environ.get("MINDWEAVE_DB", "mindweave.db")
 db = Database(DATA_PATH)
@@ -97,13 +98,16 @@ def analyze():
 
 @app.post("/proposals/{proposal_id}/review")
 def review(proposal_id: int, decision: str = Form(...), note: str = Form(""), topic: str = Form(None), concept: str = Form(None), explanation: str = Form(None)):
-    try: db.review(proposal_id, decision == "approve", note, topic, concept, explanation)
+    try: 
+        db.review(proposal_id, decision == "approve", note, topic, concept, explanation)
+        if decision == "approve": export_to_vault(db)
     except ValueError as exc: raise HTTPException(404, str(exc))
     return RedirectResponse("/?message=Proposal+reviewed", status_code=303)
 
 @app.post("/proposals/approve-all")
 def approve_all():
     for proposal in db.pending_proposals(): db.review(proposal["id"], True)
+    export_to_vault(db)
     return RedirectResponse("/?message=All+pending+proposals+approved", status_code=303)
 
 @app.get("/knowledge")
