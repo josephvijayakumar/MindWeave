@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.py[cod]
+mindweave.db
+.mindweave-google-token.json
+client_secret*.json
+*.zip

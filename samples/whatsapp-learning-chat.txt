@@ -1,0 +1,4 @@
+12/09/2026, 09:10 - Priya: What problem does RAG solve for an LLM application?
+12/09/2026, 09:12 - Arun: RAG retrieves relevant external documents before generation, so the answer can use current, grounded context rather than only model parameters.
+12/09/2026, 09:15 - Priya: For example, a support bot can retrieve its latest policy page before answering a customer.
+12/09/2026, 09:18 - Meera: How are embeddings related to vector databases?
