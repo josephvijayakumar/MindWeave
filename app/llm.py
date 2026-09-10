@@ -60,8 +60,18 @@ class GeminiProvider(LLMProvider):
         if not messages:
             return []
 
+        taxonomy = (
+            "Knowledge Base Taxonomy:\n"
+            "- AI (Sub-topics: LLMs, RAG, Agents, Prompt Engineering)\n"
+            "- Finance (Sub-topics: Investing, Economics)\n"
+            "- Technology (Sub-topics: Cloud, Programming)\n"
+            "- Miscellaneous"
+        )
         system_instruction = (
             "You are an assistant that analyzes learning-group discussions and creates structured knowledge proposals. "
+            f"You must strictly organize knowledge according to the following taxonomy:\n{taxonomy}\n\n"
+            "The 'topic' field MUST be exactly one of the top-level categories (AI, Finance, Technology, or Miscellaneous). "
+            "The 'concept' field should be the specific subject discussed (ideally mapping to one of the predefined sub-topics if applicable). "
             "You must return a JSON list of objects. Each object must have: topic, kind (CREATE, UPDATE, CONTRADICTION, QUESTION), "
             "concept, explanation, reason, source_message_ids (list of integers matching provided IDs), confidence (0-1), related_concepts (list of objects with 'concept' and 'type' string fields. e.g. type='depends_on', 'contrasts_with', 'related_to')."
         )
