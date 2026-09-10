@@ -16,7 +16,7 @@ from pathlib import Path
 from .db import Database
 from .google_docs import publish_review_document, sync_review_decisions
 import os
-from .llm import HeuristicProvider, GeminiProvider
+from .llm import HeuristicProvider, GeminiProvider, AgyProvider
 from .parser import parse_whatsapp_export, parse_telegram_json
 
 
@@ -124,10 +124,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Imported {count} messages from {filename}")
         elif args.command == "analyze":
             messages = database.unprocessed_messages(since=args.since, until=args.until, limit=args.limit)
-            if os.environ.get("LLM_PROVIDER", "heuristic").lower() == "gemini":
+            provider_choice = os.environ.get("LLM_PROVIDER", "agy").lower()
+            if provider_choice == "gemini":
                 provider = GeminiProvider()
-            else:
+            elif provider_choice == "heuristic":
                 provider = HeuristicProvider()
+            else:
+                provider = AgyProvider()
             proposals = provider.propose(messages, database.all_knowledge())
             database.add_proposals(proposals)
             database.mark_analyzed([message["id"] for message in messages])

@@ -17,7 +17,55 @@ from .models import ProposalKind, ProposedChange
 
 class LLMProvider(ABC):
     @abstractmethod
-    def propose(self, messages, existing_knowledge) -> list[ProposedChange]: ...
+    def propose(self, messages: list[dict[str, object]], existing_knowledge: list[dict[str, object]]) -> list[ProposedChange]:
+        pass
+
+
+class AgyProvider(LLMProvider):
+    def propose(self, messages: list[dict[str, object]], existing_knowledge: list[dict[str, object]]) -> list[ProposedChange]:
+        import subprocess, json
+        if not messages: return []
+        taxonomy = (
+            "Knowledge Base Taxonomy:\n"
+            "- AI (Sub-topics: LLMs, RAG, Agents, Prompt Engineering)\n"
+            "- Finance (Sub-topics: Investing, Economics)\n"
+            "- Technology (Sub-topics: Cloud, Programming)\n"
+            "- Miscellaneous"
+        )
+        system_instruction = (
+            "You are an assistant that analyzes learning-group discussions and creates structured knowledge proposals. "
+            f"You must strictly organize knowledge according to the following taxonomy:\n{taxonomy}\n\n"
+            "The 'topic' field MUST be exactly one of the top-level categories (AI, Finance, Technology, or Miscellaneous). "
+            "The 'concept' field should be the specific subject discussed (ideally mapping to one of the predefined sub-topics if applicable). "
+            "You must return a JSON list of objects. Each object must have: topic, kind (CREATE, UPDATE, CONTRADICTION, QUESTION), "
+            "concept, explanation, reason, source_message_ids (list of integers matching provided IDs), confidence (0-1), related_concepts (list of objects with 'concept' and 'type' string fields. e.g. type='depends_on', 'contrasts_with', 'related_to')."
+        )
+        prompt = f"{system_instruction}\n\nMessages:\n{json.dumps([{k: v for k, v in m.items() if k != 'sent_at'} for m in messages])}\n\nExisting Knowledge:\n{json.dumps([{k: v for k, v in k_obj.items() if k != 'created_at'} for k_obj in existing_knowledge])}"
+        try:
+            output = subprocess.check_output(["agy", "--print", prompt, "--output-format", "json"], text=True)
+            data = json.loads(output)
+            if isinstance(data, dict):
+                for val in data.values():
+                    if isinstance(val, list):
+                        data = val
+                        break
+            if not isinstance(data, list): data = []
+            
+            proposals = []
+            for item in data:
+                proposals.append(ProposedChange(
+                    topic=item.get("topic", "Miscellaneous"),
+                    kind=item.get("kind", "CREATE"),
+                    concept=item.get("concept", "Unknown"),
+                    explanation=item.get("explanation", ""),
+                    reason=item.get("reason", ""),
+                    source_message_ids=[int(i) for i in item.get("source_message_ids", [])],
+                    confidence=float(item.get("confidence", 0.5)),
+                    related_concepts=item.get("related_concepts", [])
+                ))
+            return proposals
+        except Exception as e:
+            raise RuntimeError(f"agy prompt failed: {e}")
 
 
 class HeuristicProvider(LLMProvider):

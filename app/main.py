@@ -13,15 +13,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .db import Database
-from .llm import HeuristicProvider, GeminiProvider
+from .llm import HeuristicProvider, GeminiProvider, AgyProvider
 from .parser import parse_whatsapp_export, parse_telegram_json
 
 DATA_PATH = os.environ.get("MINDWEAVE_DB", "mindweave.db")
 db = Database(DATA_PATH)
-if os.environ.get("LLM_PROVIDER", "heuristic").lower() == "gemini":
+provider_choice = os.environ.get("LLM_PROVIDER", "agy").lower()
+if provider_choice == "gemini":
     provider = GeminiProvider()
-else:
+elif provider_choice == "heuristic":
     provider = HeuristicProvider()
+else:
+    provider = AgyProvider()
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 @asynccontextmanager
