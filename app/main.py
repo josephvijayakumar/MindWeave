@@ -105,7 +105,11 @@ def approve_all():
 
 @app.get("/knowledge")
 def knowledge(request: Request):
-    return templates.TemplateResponse(request, "knowledge.html", {"items": db.all_knowledge(), "relationships": db.relationships(), "json": json})
+    items = db.all_knowledge()
+    grouped = {}
+    for item in items:
+        grouped.setdefault(item["topic"], []).append(item)
+    return templates.TemplateResponse(request, "knowledge.html", {"grouped_items": grouped, "relationships": db.relationships(), "json": json})
 
 @app.get("/graph")
 def graph(request: Request):
