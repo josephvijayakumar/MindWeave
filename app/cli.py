@@ -97,6 +97,8 @@ def build_parser() -> argparse.ArgumentParser:
     export_cmd.add_argument("--output", type=Path, required=True)
     export_knowledge_cmd = commands.add_parser("export-knowledge", help="Export canonical knowledge base to Markdown")
     export_knowledge_cmd.add_argument("--output", type=Path, required=True)
+    export_obsidian_cmd = commands.add_parser("export-obsidian", help="Export the knowledge base as an Obsidian Markdown vault")
+    export_obsidian_cmd.add_argument("--output", type=Path, help="Output directory path (default: MindWeave_Vault)")
     publish_cmd = commands.add_parser("publish-google-doc", help="Create a Google Doc containing pending proposals")
     publish_cmd.add_argument("--client-secrets", required=True, help="OAuth desktop-client JSON file")
     publish_cmd.add_argument("--token", default=".mindweave-google-token.json", help="Local OAuth token path")
@@ -161,6 +163,28 @@ def main(argv: list[str] | None = None) -> int:
                     lines.append("")
             args.output.write_text("\n".join(lines), encoding="utf-8")
             print(f"Knowledge document written to {args.output}")
+        elif args.command == "export-obsidian":
+            vault_dir = args.output if args.output else Path("MindWeave_Vault")
+            vault_dir.mkdir(parents=True, exist_ok=True)
+            items = database.all_knowledge()
+            relationships = database.relationships()
+            for item in items:
+                filename = "".join(c for c in item["concept"] if c.isalnum() or c in " -_").strip() + ".md"
+                filepath = vault_dir / filename
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write("---\n")
+                    f.write(f"topic: {item['topic']}\n")
+                    f.write(f"version: {item['version']}\n")
+                    f.write(f"confidence: {item['confidence']}\n")
+                    f.write("---\n\n")
+                    f.write(f"# {item['concept']}\n\n")
+                    f.write(f"{item['explanation']}\n\n")
+                    item_rels = [r for r in relationships if r['from_knowledge_id'] == item['id']]
+                    if item_rels:
+                        f.write("## Related Concepts\n")
+                        for r in item_rels:
+                            f.write(f"- **{r['relation_type'].replace('_', ' ').title()}**: [[{r['to_concept']}]]\n")
+            print(f"Exported {len(items)} concepts to Obsidian vault at {vault_dir.absolute()}")
         elif args.command == "publish-google-doc":
             url = publish_review_document(args.title, render_review_document(database), args.client_secrets, args.token)
             print(f"Google review document created: {url}")
