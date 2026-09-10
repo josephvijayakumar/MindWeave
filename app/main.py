@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 
 from .db import Database
 from .llm import HeuristicProvider, GeminiProvider
-from .parser import parse_whatsapp_export
+from .parser import parse_whatsapp_export, parse_telegram_json
 
 DATA_PATH = os.environ.get("MINDWEAVE_DB", "mindweave.db")
 db = Database(DATA_PATH)
@@ -63,13 +63,21 @@ async def import_chat(chat: UploadFile = File(...)):
                     return RedirectResponse("/?message=The+chat+transcript+exceeds+the+25+MB+import+limit", status_code=303)
                 payload = archive.read(transcript)
                 filename = f"{filename} / {Path(transcript.filename).name}"
+                parsed = parse_whatsapp_export(payload.decode("utf-8", errors="replace"))
         except zipfile.BadZipFile:
             return RedirectResponse("/?message=The+uploaded+file+is+not+a+valid+ZIP+archive", status_code=303)
-    elif suffix != ".txt":
-        return RedirectResponse("/?message=Upload+a+WhatsApp+.txt+export+or+media+ZIP", status_code=303)
-    parsed = parse_whatsapp_export(payload.decode("utf-8", errors="replace"))
-    if not parsed:
-        return RedirectResponse("/?message=No+WhatsApp+messages+were+found.+Please+export+the+chat+as+.txt+or+ZIP+from+WhatsApp.", status_code=303)
+    elif suffix == ".json":
+        parsed = parse_telegram_json(payload.decode("utf-8", errors="replace"))
+        if not parsed:
+            return RedirectResponse("/?message=No+Telegram+messages+found.+Export+the+group+as+JSON.", status_code=303)
+    elif suffix == ".txt":
+        parsed = parse_whatsapp_export(payload.decode("utf-8", errors="replace"))
+        if not parsed:
+            return RedirectResponse("/?message=No+WhatsApp+messages+were+found.+Please+export+the+chat+as+.txt+or+ZIP+from+WhatsApp.", status_code=303)
+    else:
+        return RedirectResponse("/?message=Upload+a+WhatsApp+.txt+or+Telegram+.json+export", status_code=303)
+    
+    if not parsed: return RedirectResponse("/?message=No+messages+found", status_code=303)
     _, count = db.import_messages(filename, parsed)
     return RedirectResponse(f"/?message=Imported+{count}+messages", status_code=303)
 

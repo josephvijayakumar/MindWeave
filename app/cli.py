@@ -17,7 +17,7 @@ from .db import Database
 from .google_docs import publish_review_document, sync_review_decisions
 import os
 from .llm import HeuristicProvider, GeminiProvider
-from .parser import parse_whatsapp_export
+from .parser import parse_whatsapp_export, parse_telegram_json
 
 
 def _load_export(path: Path):
@@ -33,11 +33,20 @@ def _load_export(path: Path):
                 raise ValueError("Chat transcript exceeds the 25 MB import limit")
             payload = archive.read(transcript)
             filename = f"{filename} / {Path(transcript.filename).name}"
-    elif path.suffix.lower() != ".txt":
-        raise ValueError("Use a WhatsApp .txt export or a media .zip export")
-    messages = parse_whatsapp_export(payload.decode("utf-8", errors="replace"))
-    if not messages:
-        raise ValueError("No WhatsApp messages found; export the chat as .txt or ZIP from WhatsApp")
+    elif path.suffix.lower() == ".json":
+        messages = parse_telegram_json(payload.decode("utf-8", errors="replace"))
+        if not messages: raise ValueError("No Telegram messages found")
+        return filename, messages
+    elif path.suffix.lower() == ".txt":
+        messages = parse_whatsapp_export(payload.decode("utf-8", errors="replace"))
+        if not messages: raise ValueError("No WhatsApp messages found")
+        return filename, messages
+    else:
+        raise ValueError("Use a WhatsApp .txt export, Telegram .json, or a media .zip export")
+    
+    if path.suffix.lower() == ".zip":
+        messages = parse_whatsapp_export(payload.decode("utf-8", errors="replace"))
+    
     return filename, messages
 
 

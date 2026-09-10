@@ -61,3 +61,29 @@ def parse_whatsapp_export(text: str) -> list[ParsedMessage]:
             sent_at=item["sent_at"], sender=str(item["sender"]), content=str(item["content"]), is_system=bool(item["is_system"])
         ))
     return parsed
+
+def parse_telegram_json(text: str) -> list[ParsedMessage]:
+    import json
+    try: data = json.loads(text)
+    except json.JSONDecodeError: return []
+    if "messages" not in data: return []
+    parsed = []
+    for item in data["messages"]:
+        if item.get("type") != "message": continue
+        date_str = item.get("date")
+        if not date_str: continue
+        try: sent_at = datetime.fromisoformat(date_str)
+        except ValueError: sent_at = None
+        sender = item.get("from") or "System"
+        raw_text = item.get("text", "")
+        if isinstance(raw_text, list):
+            content = "".join(part if isinstance(part, str) else part.get("text", "") for part in raw_text)
+        else:
+            content = str(raw_text)
+        if not content.strip(): continue
+        fingerprint = f"{item.get('id', 0)}|{sent_at}|{sender}|{content}"
+        parsed.append(ParsedMessage(
+            external_id=hashlib.sha256(fingerprint.encode()).hexdigest()[:24],
+            sent_at=sent_at, sender=str(sender), content=content, is_system=not bool(item.get("from"))
+        ))
+    return parsed
