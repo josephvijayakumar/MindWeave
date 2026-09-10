@@ -86,6 +86,8 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_cmd.add_argument("--limit", type=int, help="Limit number of messages processed in this batch")
     export_cmd = commands.add_parser("export-review", help="Write pending proposals to a Markdown review document")
     export_cmd.add_argument("--output", type=Path, required=True)
+    export_knowledge_cmd = commands.add_parser("export-knowledge", help="Export canonical knowledge base to Markdown")
+    export_knowledge_cmd.add_argument("--output", type=Path, required=True)
     publish_cmd = commands.add_parser("publish-google-doc", help="Create a Google Doc containing pending proposals")
     publish_cmd.add_argument("--client-secrets", required=True, help="OAuth desktop-client JSON file")
     publish_cmd.add_argument("--token", default=".mindweave-google-token.json", help="Local OAuth token path")
@@ -124,6 +126,29 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "export-review":
             args.output.write_text(render_review_document(database), encoding="utf-8")
             print(f"Review document written to {args.output}")
+        elif args.command == "export-knowledge":
+            lines = ["# MindWeave Knowledge Base", ""]
+            knowledge = database.all_knowledge()
+            relationships = database.relationships()
+            rels_by_id = {}
+            for r in relationships:
+                rels_by_id.setdefault(r["from_knowledge_id"], []).append(r)
+            for item in knowledge:
+                lines.extend([
+                    f"## {item['topic']}: {item['concept']}",
+                    f"- Confidence: {item['confidence']:.0%}",
+                    f"- Version: {item['version']}",
+                    "",
+                    item["explanation"],
+                    ""
+                ])
+                if item["id"] in rels_by_id:
+                    lines.append("**Relationships:**")
+                    for r in rels_by_id[item["id"]]:
+                        lines.append(f"- {r['relation_type']}: {r['to_concept']}")
+                    lines.append("")
+            args.output.write_text("\n".join(lines), encoding="utf-8")
+            print(f"Knowledge document written to {args.output}")
         elif args.command == "publish-google-doc":
             url = publish_review_document(args.title, render_review_document(database), args.client_secrets, args.token)
             print(f"Google review document created: {url}")

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MindWeave Knowledge Graph</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        #mynetwork {
+            width: 100%;
+            height: 80vh;
+            border: 1px solid lightgray;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1>Knowledge Graph</h1>
+            <nav>
+                <a href="/">Dashboard</a> | 
+                <a href="/knowledge">Knowledge Base</a>
+            </nav>
+        </header>
+        <div id="mynetwork"></div>
+    </div>
+    <script type="text/javascript">
+        var nodes = new vis.DataSet({{ nodes | safe }});
+        var edges = new vis.DataSet({{ edges | safe }});
+        var container = document.getElementById('mynetwork');
+        var data = { nodes: nodes, edges: edges };
+        var options = {
+            nodes: {
+                shape: 'dot',
+                size: 16,
+                font: { size: 14, color: '#333' },
+                borderWidth: 2
+            },
+            edges: {
+                width: 2,
+                arrows: 'to',
+                font: { align: 'middle' }
+            },
+            physics: {
+                forceAtlas2Based: { gravitationalConstant: -26, centralGravity: 0.005, springLength: 230, springConstant: 0.18 },
+                maxVelocity: 146,
+                solver: 'forceAtlas2Based',
+                timestep: 0.35,
+                stabilization: { iterations: 150 }
+            }
+        };
+        var network = new vis.Network(container, data, options);
+    </script>
+</body>
+</html>

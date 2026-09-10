@@ -98,3 +98,11 @@ def approve_all():
 @app.get("/knowledge")
 def knowledge(request: Request):
     return templates.TemplateResponse(request, "knowledge.html", {"items": db.all_knowledge(), "relationships": db.relationships(), "json": json})
+
+@app.get("/graph")
+def graph(request: Request):
+    items = db.all_knowledge()
+    relationships = db.relationships()
+    nodes = [{"id": item["id"], "label": item["concept"], "group": item["topic"]} for item in items]
+    edges = [{"from": rel["from_knowledge_id"], "to": rel["to_knowledge_id"], "label": rel["relation_type"]} for rel in relationships]
+    return templates.TemplateResponse(request, "graph.html", {"nodes": json.dumps(nodes), "edges": json.dumps(edges)})
