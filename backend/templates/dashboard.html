@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curation Suite · MindWeave</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --primary-light: #ecfdf5;
+            --primary-border: #a7f3d0;
+            --bg-page: #f8fafc;
+            --bg-surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --ai-indigo: #6366f1;
+            --ai-indigo-light: #eef2ff;
+            --warning-amber: #d97706;
+            --warning-amber-light: #fffbeb;
+            --danger-rose: #e11d48;
+            --danger-rose-light: #fff1f2;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .layout-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        /* Top Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-surface);
+            padding: 1rem 1.5rem;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2);
+        }
+
+        .brand-info h1 {
+            font-size: 1.25rem;
+            margin: 0;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .brand-info span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-pill {
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: #475569;
+            padding: 8px 14px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-pill:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .nav-pill.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+            border: 1px solid var(--primary-border);
+        }
+
+        .portal-btn {
+            background: #0f172a;
+            color: #ffffff !important;
+            border-radius: 8px;
+            padding: 8px 14px;
+        }
+        .portal-btn:hover {
+            background: #1e293b;
+        }
+
+        /* Banner Messages */
+        .alert-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.92rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Hero Sync Control Bar */
+        .sync-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+        }
+
+        .sync-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .connection-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.25);
+        }
+
+        .sync-form {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .group-select-wrapper {
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .group-select-wrapper select,
+        .group-select-wrapper input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 9px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.92rem;
+            color: var(--text-main);
+            background: #ffffff;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .group-select-wrapper select:focus,
+        .group-select-wrapper input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #ffffff;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 9px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid var(--border-color);
+            padding: 11px 18px;
+            border-radius: 9px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        /* Metric Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card.create { border-top: 3px solid var(--ai-indigo); }
+        .metric-card.update { border-top: 3px solid var(--primary); }
+        .metric-card.contradiction { border-top: 3px solid var(--danger-rose); }
+        .metric-card.question { border-top: 3px solid var(--warning-amber); }
+
+        .metric-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Quick Info Bar */
+        .repository-strip {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.9rem 1.4rem;
+            margin-bottom: 2rem;
+            font-size: 0.88rem;
+            color: #475569;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .repo-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .repo-stat-item b {
+            color: var(--text-main);
+        }
+
+        /* Proposal Section */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        /* Proposal Card */
+        .proposal-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            transition: border-color 0.15s ease;
+        }
+
+        .proposal-card:hover {
+            border-color: #cbd5e1;
+        }
+
+        .proposal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .badge-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kind-pill {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kind-pill.CREATE { background: var(--ai-indigo-light); color: var(--ai-indigo); border: 1px solid #c7d2fe; }
+        .kind-pill.UPDATE { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); }
+        .kind-pill.CONTRADICTION { background: var(--danger-rose-light); color: var(--danger-rose); border: 1px solid #fecdd3; }
+        .kind-pill.QUESTION { background: var(--warning-amber-light); color: var(--warning-amber); border: 1px solid #fde68a; }
+
+        .topic-pill {
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        .confidence-tag {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #059669;
+            background: #ecfdf5;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .concept-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        .reason-box {
+            background: #f8fafc;
+            border-left: 3px solid #94a3b8;
+            padding: 8px 12px;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.88rem;
+            color: #475569;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        /* Source message drawer */
+        details.source-drawer {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 1.25rem;
+            font-size: 0.88rem;
+        }
+
+        details.source-drawer summary {
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+        }
+
+        .source-msg-list {
+            margin-top: 10px;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .source-msg-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #edf2f7;
+            display: flex;
+            gap: 8px;
+        }
+
+        .source-sender {
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 90px;
+        }
+
+        /* Inline Review Form */
+        .review-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fbfcfd;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 12px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .form-field input,
+        .form-field textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 0.88rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: #ffffff;
+            outline: none;
+        }
+
+        .form-field input:focus,
+        .form-field textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .review-actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 6px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn-approve {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .btn-approve:hover { background: var(--primary-hover); }
+
+        .btn-reject {
+            background: #ffffff;
+            color: var(--danger-rose);
+            border: 1px solid #fecdd3;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-reject:hover {
+            background: var(--danger-rose-light);
+            border-color: var(--danger-rose);
+        }
+
+        /* Empty State */
+        .empty-state-card {
+            background: var(--bg-surface);
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 3.5rem 2rem;
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 54px;
+            height: 54px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+        }
+
+        .empty-state-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            color: var(--text-main);
+        }
+
+        .empty-state-card p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            max-width: 480px;
+            margin: 0 auto 1.5rem;
+            line-height: 1.5;
+        }
+
+        /* Legacy File Drawer */
+        .legacy-toggle {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-align: right;
+            margin-top: 10px;
+        }
+        .legacy-toggle a {
+            color: #64748b;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-grid { grid-template-columns: 1fr; }
+            .sync-form { flex-direction: column; align-items: stretch; }
+            .navbar { flex-direction: column; gap: 12px; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-container">
+        <!-- Top Navigation Bar -->
+        <header class="navbar">
+            <div class="brand-group">
+                <div class="brand-logo">MW</div>
+                <div class="brand-info">
+                    <h1>MindWeave</h1>
+                    <span>Collective Knowledge Ingestion Suite</span>
+                </div>
+            </div>
+            <nav class="nav-actions">
+                <a href="/" class="nav-pill active">Dashboard</a>
+                <a href="/knowledge" class="nav-pill">Knowledge Base</a>
+                <a href="/graph" class="nav-pill">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    Graph Visualizer
+                </a>
+                <a href="http://localhost:3001" target="_blank" class="nav-pill portal-btn" title="Open Public Q&A Portal on port 3001">
+                    Q&A Portal &nearr;
+                </a>
+            </nav>
+        </header>
+
+        {% if message %}
+        <div class="alert-banner">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; font-size:1.2rem; cursor:pointer;">&times;</button>
+        </div>
+        {% endif %}
+
+        <!-- Direct WhatsApp Sync Control Panel -->
+        <section class="sync-card">
+            <div class="sync-header">
+                <div class="connection-indicator">
+                    <span class="pulse-dot"></span>
+                    Local WhatsApp Desktop Connected
+                </div>
+                <div style="font-size: 0.85rem; color: #64748b;">
+                    macOS Native Ingestion Engine
+                </div>
+            </div>
+
+            <form action="/sync-whatsapp" method="POST" class="sync-form">
+                <div class="group-select-wrapper">
+                    {% if whatsapp_chats %}
+                    <select name="group_name" required>
+                        {% for chat in whatsapp_chats %}
+                        <option value="{{ chat }}" {% if chat == default_group %}selected{% endif %}>{{ chat }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" name="group_name" value="{{ default_group }}" placeholder="Enter exact WhatsApp group name..." required>
+                    {% endif %}
+                </div>
+
+                <input type="hidden" name="auto_analyze" value="yes">
+
+                <button type="submit" class="btn-primary">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    Sync & Analyze WhatsApp
+                </button>
+
+                <button type="submit" formaction="/sync-whatsapp" name="auto_analyze" value="no" class="btn-secondary" title="Import new messages without running AI analysis immediately">
+                    Sync Only
+                </button>
+            </form>
+
+            <div class="legacy-toggle">
+                <a onclick="document.getElementById('fileUploadDrawer').style.display = document.getElementById('fileUploadDrawer').style.display === 'none' ? 'block' : 'none'">
+                    Need to upload a manual export (.zip / .txt) instead?
+                </a>
+            </div>
+
+            <div id="fileUploadDrawer" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #cbd5e1;">
+                <form action="/imports" method="POST" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input type="file" name="chat" accept=".txt,.json,.zip,application/zip,application/json" required style="font-size:0.85rem;">
+                    <button type="submit" class="btn-secondary" style="padding: 8px 14px;">Upload Export</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Metrics Overview Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card create">
+                <div class="metric-number">{{ summary.CREATE }}</div>
+                <div class="metric-label">New Concepts</div>
+            </div>
+            <div class="metric-card update">
+                <div class="metric-number">{{ summary.UPDATE }}</div>
+                <div class="metric-label">Improvements</div>
+            </div>
+            <div class="metric-card contradiction">
+                <div class="metric-number">{{ summary.CONTRADICTION }}</div>
+                <div class="metric-label">Contradictions</div>
+            </div>
+            <div class="metric-card question">
+                <div class="metric-number">{{ summary.QUESTION }}</div>
+                <div class="metric-label">Open Questions</div>
+            </div>
+        </div>
+
+        <!-- Repository Health Strip -->
+        <div class="repository-strip">
+            <div class="repo-stat-item">
+                <span>📚 Approved Concepts:</span>
+                <b>{{ total_canonical }}</b>
+            </div>
+            <div class="repo-stat-item">
+                <span>🕸️ Active Relationships:</span>
+                <b>{{ total_relationships }}</b>
+            </div>
+            <div class="repo-stat-item">
+                <span>💬 Total Ingested Messages:</span>
+                <b>{{ total_messages }}</b>
+            </div>
+            {% if unanalyzed_count > 0 %}
+            <div class="repo-stat-item" style="color: #d97706;">
+                <span>⏳ Unanalyzed:</span>
+                <b>{{ unanalyzed_count }} messages</b>
+                <form action="/analyze" method="POST" style="display:inline; margin-left: 6px;">
+                    <button type="submit" class="btn-primary" style="padding: 4px 10px; font-size: 0.75rem;">Run Analysis</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Proposal Curation Section -->
+        <section>
+            <div class="section-header">
+                <h2>Pending Knowledge Proposals ({{ proposals|length }})</h2>
+                {% if proposals %}
+                <form action="/proposals/approve-all" method="POST" onsubmit="return confirm('Approve all {{ proposals|length }} proposals into canonical knowledge?');">
+                    <button type="submit" class="btn-primary" style="background: #165c43;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Approve All Pending
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            {% for item in proposals %}
+            {% set p = item.proposal %}
+            <article class="proposal-card">
+                <div class="proposal-header">
+                    <div class="badge-group">
+                        <span class="kind-pill {{ p.kind }}">{{ p.kind }}</span>
+                        <span class="topic-pill">{{ p.topic }}</span>
+                    </div>
+                    <span class="confidence-tag">{{ '%.0f'|format(p.confidence * 100) }}% AI Confidence</span>
+                </div>
+
+                <h3 class="concept-title">{{ p.concept }}</h3>
+
+                {% if p.reason %}
+                <div class="reason-box">
+                    <strong>AI Rationale:</strong> {{ p.reason }}
+                </div>
+                {% endif %}
+
+                {% if item.messages %}
+                <details class="source-drawer">
+                    <summary>View Source WhatsApp Discussion ({{ item.messages|length }} messages)</summary>
+                    <ul class="source-msg-list">
+                        {% for m in item.messages %}
+                        <li class="source-msg-item">
+                            <span class="source-sender">{{ m.sender }}:</span>
+                            <span style="color: #334155;">{{ m.content }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </details>
+                {% endif %}
+
+                <form action="/proposals/{{ p.id }}/review" method="POST" class="review-form">
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label>Topic Category</label>
+                            <input type="text" name="topic" value="{{ p.topic }}" required>
+                        </div>
+                        <div class="form-field">
+                            <label>Concept Term</label>
+                            <input type="text" name="concept" value="{{ p.concept }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Canonical Explanation / Definition</label>
+                        <textarea name="explanation" rows="3" required>{{ p.explanation }}</textarea>
+                    </div>
+
+                    <div class="review-actions-row">
+                        <div style="flex:1; max-width: 380px;">
+                            <input type="text" name="note" placeholder="Optional curation note..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 0.85rem;">
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="submit" name="decision" value="reject" class="btn-reject" onclick="return confirm('Reject this proposal?');">
+                                Reject
+                            </button>
+                            <button type="submit" name="decision" value="approve" class="btn-approve">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Approve Concept
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </article>
+            {% else %}
+            <div class="empty-state-card">
+                <div class="empty-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h3>Approval Queue is Clear</h3>
+                <p>There are currently no pending proposals requiring human review. All approved items are safely versioned and synced to your Obsidian vault.</p>
+                <div style="display: flex; justify-content: center; gap: 10px;">
+                    <a href="/graph" class="btn-primary" style="text-decoration:none;">Explore Knowledge Graph</a>
+                    <a href="/knowledge" class="btn-secondary" style="text-decoration:none;">View Knowledge Base</a>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+    </div>
+</body>
+</html>

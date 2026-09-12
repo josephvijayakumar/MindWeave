@@ -1,0 +1,49 @@
+{
+  "name": "AI Learning Group",
+  "type": "public_group",
+  "id": 100000000,
+  "messages": [
+    {
+      "id": 1,
+      "type": "message",
+      "date": "2026-09-12T09:10:00",
+      "from": "Alex",
+      "text": "Has anyone figured out how to use Retrieval-Augmented Generation (RAG)?"
+    },
+    {
+      "id": 2,
+      "type": "message",
+      "date": "2026-09-12T09:11:30",
+      "from": "Priya",
+      "text": "Yes! RAG essentially retrieves relevant context from a database before generating an answer. It dramatically reduces AI hallucinations."
+    },
+    {
+      "id": 3,
+      "type": "message",
+      "date": "2026-09-12T09:12:15",
+      "from": "Sam",
+      "text": [
+        "I agree, and it usually depends on ",
+        {
+          "type": "bold",
+          "text": "Vector Databases"
+        },
+        " to do the retrieval fast."
+      ]
+    },
+    {
+      "id": 4,
+      "type": "message",
+      "date": "2026-09-12T09:15:00",
+      "from": "Alex",
+      "text": "Oh, that makes sense. So Vector Databases store Embeddings?"
+    },
+    {
+      "id": 5,
+      "type": "message",
+      "date": "2026-09-12T09:16:22",
+      "from": "Priya",
+      "text": "Exactly. Embeddings are just mathematical representations of words or sentences. The vector DB lets you search for similar concepts quickly."
+    }
+  ]
+}

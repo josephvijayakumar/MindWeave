@@ -1,7 +1,15 @@
 .venv/
 __pycache__/
 *.py[cod]
-mindweave.db
+*.db
+*.sqlite
+*.sqlite3
 .mindweave-google-token.json
 client_secret*.json
 *.zip
+.DS_Store
+*.log
+logs/
+.active-time-log.json
+active-time-log.csv
+

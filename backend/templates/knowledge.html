@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Base · MindWeave</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        :root {
+            --primary: #165c43;
+            --primary-light: #eaf5ee;
+            --ai-color: #6366F1;
+            --finance-color: #10B981;
+            --tech-color: #0EA5E9;
+            --misc-color: #F59E0B;
+        }
+        .concept-card {
+            background: #ffffff;
+            border: 1px solid #d9e3d7;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            transition: border-color 0.15s ease;
+        }
+        .concept-card:hover {
+            border-color: var(--primary);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        .card-title {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #18231d;
+        }
+        .rels-container {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .rel-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 0.78rem;
+            color: #334155;
+            text-decoration: none;
+        }
+        .rel-badge:hover {
+            background: #e2e8f0;
+        }
+        .rel-tag {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .notice-banner {
+            background: #eaf5ee;
+            border: 1px solid #c2e2cc;
+            color: #165c43;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .graph-cta-banner {
+            background: linear-gradient(135deg, #eaf5ee 0%, #d5ebe0 100%);
+            border: 1px solid #b7dec9;
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h1>Knowledge Base</h1>
+            <nav style="position: static; margin: 0;">
+                <a href="/">&larr; Dashboard</a> | 
+                <a href="/graph" style="font-weight: bold;">Interactive Graph &rarr;</a>
+            </nav>
+        </header>
+
+        {% if message %}
+        <div class="notice-banner">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#165c43;cursor:pointer;font-weight:bold;">&times;</button>
+        </div>
+        {% endif %}
+
+        <div class="graph-cta-banner">
+            <div>
+                <b style="font-size: 1.05rem; color: #165c43; display: block; margin-bottom: 4px;">Explore the Connected Network</b>
+                <span style="font-size: 0.88rem; color: #355344;">Visualize how concepts cross-reference each other with interactive physics and filters.</span>
+            </div>
+            <a href="/graph" style="background: #165c43; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.9rem;">Launch Graph Visualizer</a>
+        </div>
+
+        <h2>Curated Knowledge Items</h2>
+
+        {% for topic, items in grouped_items.items() %}
+            <h3 style="border-bottom: 2px solid #d9e3d7; padding-bottom: 6px; margin-top: 2rem; color: #165c43;">
+                {{ topic }} <span style="font-size: 0.85rem; font-weight: normal; color: #617067;">({{ items|length }} items)</span>
+            </h3>
+            
+            {% for item in items %}
+            <article class="concept-card">
+                <div class="card-header">
+                    <h4 class="card-title">{{ item.concept }}</h4>
+                    <div class="meta">v{{ item.version }} · {{ '%.0f'|format(item.confidence * 100) }}% confidence</div>
+                </div>
+                <p style="margin: 0; line-height: 1.5; color: #2d3748;">{{ item.explanation }}</p>
+
+                {% if rels_by_item.get(item.id) %}
+                <div class="rels-container">
+                    <span style="font-size: 0.78rem; font-weight: 600; color: #64748b;">Connections:</span>
+                    {% for r in rels_by_item.get(item.id) %}
+                    <a href="/graph" class="rel-badge" title="Click to view connection in Graph">
+                        <span class="rel-tag">{{ r.relation_type.replace('_', ' ') }} &rarr;</span>
+                        <span>{{ r.to_concept }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+        {% else %}
+            <p>No knowledge items approved yet.</p>
+        {% endfor %}
+
+        <h2 style="margin-top: 3rem;">All Established Relationships ({{ relationships|length }})</h2>
+        <div style="background: #ffffff; border: 1px solid #d9e3d7; border-radius: 12px; padding: 1.5rem;">
+            {% if relationships %}
+            <ul style="margin: 0; padding-left: 1.25rem; line-height: 1.8;">
+                {% for r in relationships %}
+                <li style="margin-bottom: 6px;">
+                    <b>{{ r.from_concept }}</b>
+                    <span style="color: #64748b; font-style: italic; font-size: 0.9rem;">[{{ r.relation_type }}]</span>
+                    &rarr; <b>{{ r.to_concept }}</b>
+                    <form action="/relationships/{{ r.id }}/delete" method="POST" style="display:inline; margin-left: 8px;">
+                        <button type="submit" style="background:none; border:none; color:#dc2626; cursor:pointer; font-size:0.8rem; padding: 0 4px;" title="Delete relationship">&times; remove</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="margin: 0; color: #64748b;">No relationships established yet. Visit the <a href="/graph">Graph Visualizer</a> and click "Discover Links" to scan for semantic connections.</p>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

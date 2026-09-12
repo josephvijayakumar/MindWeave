@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph · MindWeave</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        :root {
+            --primary: #165c43;
+            --primary-light: #eaf5ee;
+            --ai-color: #6366F1;
+            --finance-color: #10B981;
+            --tech-color: #0EA5E9;
+            --misc-color: #F59E0B;
+            --bg-canvas: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+        body {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .graph-page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 3rem);
+            box-sizing: border-box;
+        }
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .nav-header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+        .nav-links a:hover {
+            background: var(--primary-light);
+        }
+        .nav-links a.active {
+            background: var(--primary);
+            color: #ffffff;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: #ffffff;
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .filter-pill {
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .filter-pill:hover, .filter-pill.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-box input {
+            padding: 7px 14px 7px 32px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.9rem;
+            width: 200px;
+            transition: width 0.2s ease, border-color 0.2s ease;
+        }
+        .search-box input:focus {
+            width: 280px;
+            outline: none;
+            border-color: var(--primary);
+        }
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+        .action-btn {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.15s ease;
+        }
+        .action-btn:hover { opacity: 0.9; }
+        .action-btn.secondary {
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .action-btn.secondary:hover { background: #cbd5e1; }
+        
+        .main-workspace {
+            display: flex;
+            flex: 1;
+            gap: 1rem;
+            position: relative;
+            min-height: 0;
+        }
+        #mynetwork {
+            flex: 1;
+            height: 100%;
+            background: var(--bg-canvas);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            position: relative;
+        }
+        .graph-legend {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        /* Inspector Drawer */
+        .inspector-panel {
+            width: 380px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: -4px 0 16px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.25s ease;
+        }
+        .inspector-panel.hidden {
+            display: none;
+        }
+        .inspector-header {
+            padding: 1.2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            background: #fafafa;
+        }
+        .inspector-title {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #0f172a;
+            word-break: break-word;
+        }
+        .topic-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 6px;
+        }
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .close-btn:hover { background: #e2e8f0; color: #0f172a; }
+        .inspector-body {
+            padding: 1.2rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .inspector-section {
+            margin-bottom: 1.5rem;
+        }
+        .inspector-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+        .explanation-text {
+            font-size: 0.92rem;
+            line-height: 1.5;
+            color: #334155;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 0;
+        }
+        .meta-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+        .meta-stat-box {
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .meta-stat-box b {
+            display: block;
+            font-size: 1rem;
+            color: #0f172a;
+        }
+        .relation-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+        .relation-name {
+            cursor: pointer;
+            color: var(--primary);
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .relation-name:hover { text-decoration: underline; }
+        .relation-type-tag {
+            font-size: 0.72rem;
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+        .delete-rel-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 0.9rem;
+            border-radius: 4px;
+        }
+        .delete-rel-btn:hover { background: #fee2e2; }
+
+        /* Add Link Form inside inspector */
+        .add-link-form {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+            margin-top: 1rem;
+        }
+        .add-link-form select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+        .add-link-form button {
+            width: 100%;
+            padding: 8px;
+            font-size: 0.85rem;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card {
+            background: #ffffff;
+            width: 440px;
+            max-width: 90vw;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .modal-card h3 { margin-top: 0; color: #0f172a; }
+        .form-row { margin-bottom: 1rem; }
+        .form-row label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; color: #475569; }
+        .form-row select, .form-row input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; }
+
+        .notice-banner {
+            background: #eaf5ee;
+            border: 1px solid #c2e2cc;
+            color: #165c43;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="graph-page-container">
+        <!-- Navigation Header -->
+        <header class="nav-header">
+            <h1>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Knowledge Graph Visualizer
+            </h1>
+            <nav class="nav-links">
+                <a href="/">Dashboard</a>
+                <a href="/knowledge">Knowledge Base</a>
+                <a href="/graph" class="active">Graph</a>
+            </nav>
+        </header>
+
+        {% if message %}
+        <div class="notice-banner">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#165c43;cursor:pointer;font-weight:bold;">&times;</button>
+        </div>
+        {% endif %}
+
+        <!-- Interactive Toolbar -->
+        <div class="toolbar">
+            <div class="tool-group">
+                <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Filter:</span>
+                <button class="filter-pill active" onclick="filterByTopic('ALL')">All Domains</button>
+                {% for t in topics %}
+                <button class="filter-pill" onclick="filterByTopic('{{ t }}')">{{ t }}</button>
+                {% endfor %}
+            </div>
+
+            <div class="tool-group">
+                <div class="search-box">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="conceptSearch" placeholder="Search concept..." oninput="handleSearch(this.value)">
+                </div>
+                <button class="action-btn secondary" onclick="network.fit({animation: true})">Fit View</button>
+                <button class="action-btn secondary" onclick="openCreateModal()">+ Add Link</button>
+                <form action="/relationships/discover" method="POST" style="margin:0;display:inline;">
+                    <button type="submit" class="action-btn" title="Automatically scan and discover connections across existing approved knowledge">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Discover Links
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Graph Workspace -->
+        <div class="main-workspace">
+            <div id="mynetwork">
+                <div class="graph-legend">
+                    <div class="legend-item"><div class="legend-color" style="background:#6366F1;"></div> AI</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#10B981;"></div> Finance</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#0EA5E9;"></div> Technology</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#F59E0B;"></div> Miscellaneous</div>
+                </div>
+            </div>
+
+            <!-- Inspector Panel -->
+            <div class="inspector-panel hidden" id="inspectorPanel">
+                <div class="inspector-header">
+                    <div>
+                        <h3 class="inspector-title" id="inspectorTitle">Concept</h3>
+                        <span class="topic-badge" id="inspectorTopic">Topic</span>
+                    </div>
+                    <button class="close-btn" onclick="closeInspector()">&times;</button>
+                </div>
+                <div class="inspector-body">
+                    <div class="meta-stats">
+                        <div class="meta-stat-box">
+                            Confidence
+                            <b id="inspectorConfidence">0%</b>
+                        </div>
+                        <div class="meta-stat-box">
+                            Version
+                            <b id="inspectorVersion">v1</b>
+                        </div>
+                    </div>
+
+                    <div class="inspector-section">
+                        <h4>Explanation</h4>
+                        <p class="explanation-text" id="inspectorExplanation"></p>
+                    </div>
+
+                    <div class="inspector-section">
+                        <h4>Connected Concepts (<span id="inspectorRelCount">0</span>)</h4>
+                        <div id="inspectorRelationships"></div>
+                    </div>
+
+                    <div class="inspector-section">
+                        <h4>Link to Another Concept</h4>
+                        <form action="/relationships" method="POST" class="add-link-form">
+                            <input type="hidden" name="from_knowledge_id" id="formFromId">
+                            <select name="relation_type" required>
+                                <option value="related_to">related_to</option>
+                                <option value="depends_on">depends_on</option>
+                                <option value="specialization_of">specialization_of</option>
+                                <option value="prerequisite_of">prerequisite_of</option>
+                                <option value="part_of">part_of</option>
+                                <option value="contrasts_with">contrasts_with</option>
+                            </select>
+                            <select name="to_knowledge_id" id="formToId" required>
+                                <option value="" disabled selected>Select target concept...</option>
+                                {% for item in all_items %}
+                                <option value="{{ item.id }}">{{ item.topic }}: {{ item.concept }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="action-btn">Connect Concept</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Link Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal-card">
+            <h3>Add Knowledge Connection</h3>
+            <form action="/relationships" method="POST">
+                <div class="form-row">
+                    <label>Source Concept (From):</label>
+                    <select name="from_knowledge_id" required>
+                        <option value="" disabled selected>Select source concept...</option>
+                        {% for item in all_items %}
+                        <option value="{{ item.id }}">{{ item.topic }}: {{ item.concept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Relationship Type:</label>
+                    <select name="relation_type" required>
+                        <option value="related_to">related_to</option>
+                        <option value="depends_on">depends_on</option>
+                        <option value="specialization_of">specialization_of</option>
+                        <option value="prerequisite_of">prerequisite_of</option>
+                        <option value="part_of">part_of</option>
+                        <option value="contrasts_with">contrasts_with</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Target Concept (To):</label>
+                    <select name="to_knowledge_id" required>
+                        <option value="" disabled selected>Select target concept...</option>
+                        {% for item in all_items %}
+                        <option value="{{ item.id }}">{{ item.topic }}: {{ item.concept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="action-btn secondary" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="action-btn">Create Relationship</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const rawNodes = {{ nodes | safe }};
+        const rawEdges = {{ edges | safe }};
+
+        const topicStyles = {
+            "AI": { bg: "#EEF2FF", border: "#6366F1", text: "#312E81", badgeBg: "#E0E7FF", badgeText: "#4338CA" },
+            "Finance": { bg: "#ECFDF5", border: "#10B981", text: "#064E3B", badgeBg: "#D1FAE5", badgeText: "#047857" },
+            "Technology": { bg: "#F0F9FF", border: "#0EA5E9", text: "#0C4A6E", badgeBg: "#E0F2FE", badgeText: "#0369A1" },
+            "Miscellaneous": { bg: "#FFFBEB", border: "#F59E0B", text: "#78350F", badgeBg: "#FEF3C7", badgeText: "#B45309" }
+        };
+
+        const styledNodes = rawNodes.map(n => {
+            const style = topicStyles[n.topic] || topicStyles["Miscellaneous"];
+            return {
+                id: n.id,
+                label: n.concept,
+                title: `${n.topic}: ${n.concept}\n${n.explanation.substring(0, 100)}...`,
+                color: {
+                    background: style.bg,
+                    border: style.border,
+                    highlight: { background: "#ffffff", border: style.border },
+                    hover: { background: "#ffffff", border: style.border }
+                },
+                font: { color: style.text, size: 13, bold: true, face: "Inter, system-ui, sans-serif" },
+                shape: "box",
+                margin: 10,
+                borderWidth: 2,
+                borderRadius: 8,
+                shadow: { enabled: true, color: "rgba(0,0,0,0.06)", size: 6, x: 2, y: 3 },
+                raw: n
+            };
+        });
+
+        const styledEdges = rawEdges.map(e => ({
+            id: e.id,
+            from: e.from,
+            to: e.to,
+            label: e.label,
+            arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+            color: { color: "#94A3B8", highlight: "#165c43", hover: "#165c43" },
+            font: { size: 10, color: "#64748B", background: "#ffffff", strokeWidth: 0, align: "middle" },
+            smooth: { type: "cubicBezier", roundness: 0.3 },
+            raw: e
+        }));
+
+        const nodesDataSet = new vis.DataSet(styledNodes);
+        const edgesDataSet = new vis.DataSet(styledEdges);
+
+        const container = document.getElementById('mynetwork');
+        const data = { nodes: nodesDataSet, edges: edgesDataSet };
+        const options = {
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                navigationButtons: true,
+                keyboard: true
+            },
+            physics: {
+                solver: "forceAtlas2Based",
+                forceAtlas2Based: {
+                    gravitationalConstant: -38,
+                    centralGravity: 0.008,
+                    springLength: 160,
+                    springConstant: 0.12,
+                    damping: 0.88
+                },
+                stabilization: { iterations: 180 }
+            }
+        };
+
+        const network = new vis.Network(container, data, options);
+
+        // Selection & Inspector
+        network.on("selectNode", function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                openInspector(nodeId);
+            }
+        });
+
+        network.on("deselectNode", function() {
+            closeInspector();
+        });
+
+        function openInspector(nodeId) {
+            const nodeData = nodesDataSet.get(nodeId);
+            if (!nodeData) return;
+            const n = nodeData.raw;
+            const style = topicStyles[n.topic] || topicStyles["Miscellaneous"];
+
+            document.getElementById("inspectorTitle").innerText = n.concept;
+            const topicBadge = document.getElementById("inspectorTopic");
+            topicBadge.innerText = n.topic;
+            topicBadge.style.background = style.badgeBg;
+            topicBadge.style.color = style.badgeText;
+
+            document.getElementById("inspectorConfidence").innerText = `${n.confidence}%`;
+            document.getElementById("inspectorVersion").innerText = `v${n.version}`;
+            document.getElementById("inspectorExplanation").innerText = n.explanation;
+
+            document.getElementById("formFromId").value = n.id;
+            
+            // Connected relationships
+            const connectedEdges = edgesDataSet.get({
+                filter: e => e.from === n.id || e.to === n.id
+            });
+
+            document.getElementById("inspectorRelCount").innerText = connectedEdges.length;
+            const relContainer = document.getElementById("inspectorRelationships");
+            relContainer.innerHTML = "";
+
+            if (connectedEdges.length === 0) {
+                relContainer.innerHTML = `<div style="font-size: 0.85rem; color: #94a3b8; font-style: italic;">No connections yet. Add one below!</div>`;
+            } else {
+                connectedEdges.forEach(e => {
+                    const isOutgoing = e.from === n.id;
+                    const otherId = isOutgoing ? e.to : e.from;
+                    const otherNode = nodesDataSet.get(otherId);
+                    const otherName = otherNode ? otherNode.raw.concept : "Unknown";
+
+                    const item = document.createElement("div");
+                    item.className = "relation-item";
+                    item.innerHTML = `
+                        <div>
+                            <span class="relation-type-tag">${isOutgoing ? '&#8594;' : '&#8592;'} ${e.label}</span>
+                            <span class="relation-name" onclick="focusOnNode(${otherId})">${otherName}</span>
+                        </div>
+                        <form action="/relationships/${e.id}/delete" method="POST" style="margin:0;">
+                            <button type="submit" class="delete-rel-btn" title="Delete connection">&times;</button>
+                        </form>
+                    `;
+                    relContainer.appendChild(item);
+                });
+            }
+
+            document.getElementById("inspectorPanel").classList.remove("hidden");
+        }
+
+        function closeInspector() {
+            document.getElementById("inspectorPanel").classList.add("hidden");
+        }
+
+        function focusOnNode(nodeId) {
+            network.selectNodes([nodeId]);
+            network.focus(nodeId, {
+                scale: 1.2,
+                animation: { duration: 600, easingFunction: "easeInOutQuad" }
+            });
+            openInspector(nodeId);
+        }
+
+        function filterByTopic(topic) {
+            // Update active pill
+            document.querySelectorAll(".filter-pill").forEach(p => {
+                if ((topic === "ALL" && p.innerText === "All Domains") || p.innerText === topic) {
+                    p.classList.add("active");
+                } else {
+                    p.classList.remove("active");
+                }
+            });
+
+            if (topic === "ALL") {
+                nodesDataSet.forEach(n => nodesDataSet.update({ id: n.id, hidden: false }));
+                edgesDataSet.forEach(e => edgesDataSet.update({ id: e.id, hidden: false }));
+            } else {
+                const visibleIds = new Set();
+                nodesDataSet.forEach(n => {
+                    const hide = n.raw.topic !== topic;
+                    nodesDataSet.update({ id: n.id, hidden: hide });
+                    if (!hide) visibleIds.add(n.id);
+                });
+                edgesDataSet.forEach(e => {
+                    const hide = !visibleIds.has(e.from) || !visibleIds.has(e.to);
+                    edgesDataSet.update({ id: e.id, hidden: hide });
+                });
+            }
+            network.fit({ animation: true });
+        }
+
+        function handleSearch(query) {
+            if (!query.trim()) return;
+            const q = query.toLowerCase();
+            const match = styledNodes.find(n => n.raw.concept.toLowerCase().includes(q) || n.raw.topic.toLowerCase().includes(q));
+            if (match) {
+                focusOnNode(match.id);
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById("createModal").classList.add("open");
+        }
+
+        function closeCreateModal() {
+            document.getElementById("createModal").classList.remove("open");
+        }
+    </script>
+</body>
+</html>

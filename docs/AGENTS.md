@@ -12,10 +12,16 @@ MindWeave turns learning-group conversations into a connected, reviewable knowle
 
 ## Current stack and local commands
 
+**Part 1: The Engine (Backend & Curation)**
 - Python 3.9+; FastAPI; Jinja templates; SQLite.
 - Setup: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`
+
+**Part 2: The Portal (Frontend Q&A Web App)**
+- Node.js; Next.js (React); Vanilla CSS.
+- Setup: `cd portal && npm install`
+- Dev Server: `npm run dev`
 - Tests: `.venv/bin/python -m unittest discover -s tests -v`
-- App: `.venv/bin/uvicorn app.main:app --reload`
+- App: `.venv/bin/uvicorn backend.main:app --reload`
 - Default local URL: `http://localhost:8000`
 - Use `MINDWEAVE_DB=/absolute/path/to/test.db` for isolated manual or automated test data. Do not commit databases, exports, media, API keys, or personal chat content.
 
@@ -23,13 +29,16 @@ MindWeave turns learning-group conversations into a connected, reviewable knowle
 
 | Area | Location | Contract |
 | --- | --- | --- |
-| WhatsApp parsing | `app/parser.py` | Return `ParsedMessage`; preserve multiline messages and mark system entries. |
-| Import + web routes | `app/main.py` | Accept `.txt` or media ZIP exports; keep errors user-facing. |
-| Persistence + approval | `app/db.py` | Raw source is retained. `review(..., approved=True)` is the only canonical-write path. |
-| Analysis providers | `app/llm.py` | Implement `LLMProvider.propose(messages, existing_knowledge)` and return structured `ProposedChange` values only. |
-| Data structures | `app/models.py` | Keep proposal kinds and source IDs explicit. |
-| Dashboard | `app/templates/` + `app/static/` | Keep approval/rejection visible and deliberate. |
-| CLI + Google Docs review | `app/cli.py` + `app/google_docs.py` | Same database as UI; publishing is proposal-only and OAuth credentials stay local. |
+| WhatsApp parsing | `backend/parser.py` | Return `ParsedMessage`; preserve multiline messages and mark system entries. |
+| Import + web routes | `backend/main.py` | Accept `.txt` or media ZIP exports; keep errors user-facing. |
+| Persistence + approval | `backend/db.py` | Raw source is retained. `review(..., approved=True)` is the only canonical-write path. |
+| Analysis providers | `backend/llm.py` | Implement `LLMProvider.propose(messages, existing_knowledge)` and return structured `ProposedChange` values only. |
+| Data structures | `backend/models.py` | Keep proposal kinds and source IDs explicit. |
+| Dashboard | `backend/templates/` + `backend/static/` | Keep approval/rejection visible and deliberate. |
+| CLI + Google Docs review | `backend/cli.py` + `backend/google_docs.py` | Same database as UI; publishing is proposal-only and OAuth credentials stay local. |
+| Q&A Portal (Frontend) | `portal/` | Next.js app serving as the public-facing StackOverflow-style UI reading from the curated SQLite DB. |
+
+**Important Customization Note:** A comprehensive skill and architectural guide is maintained at `.agents/skills/mindweave-stack/SKILL.md`. All coding agents (Claude, Codex, Antigravity) must read it to understand how the Python Backend and Node.js frontend interact.
 
 ## Working rules
 

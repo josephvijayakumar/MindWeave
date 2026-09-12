@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from .models import ParsedMessage, ProposedChange
 
 
 class Database:
-    def __init__(self, path: str = "mindweave.db"):
+    def __init__(self, path: str = "database/mindweave.db"):
         self.path = Path(path)
 
     def connection(self) -> sqlite3.Connection:
@@ -114,6 +115,67 @@ class Database:
             for rel in json.loads(proposal["related_concepts"]):
                 target_concept = rel if isinstance(rel, str) else rel.get("concept")
                 rel_type = "related_to" if isinstance(rel, str) else rel.get("type", "related_to")
-                target = conn.execute("SELECT id FROM knowledge_items WHERE concept = ?", (target_concept,)).fetchone()
+                target = conn.execute("SELECT id FROM knowledge_items WHERE LOWER(concept) = LOWER(?)", (target_concept,)).fetchone()
                 if target and target["id"] != knowledge_id:
                     conn.execute("INSERT OR IGNORE INTO relationships(from_knowledge_id, to_knowledge_id, relation_type, source_proposal_id) VALUES (?, ?, ?, ?)", (knowledge_id, target["id"], rel_type, proposal_id))
+
+    def add_relationship(self, from_knowledge_id: int, to_knowledge_id: int, relation_type: str = "related_to", source_proposal_id: int | None = None) -> bool:
+        if from_knowledge_id == to_knowledge_id:
+            return False
+        with self.connection() as conn:
+            cur = conn.execute(
+                "INSERT OR IGNORE INTO relationships(from_knowledge_id, to_knowledge_id, relation_type, source_proposal_id) VALUES (?, ?, ?, ?)",
+                (from_knowledge_id, to_knowledge_id, relation_type.strip(), source_proposal_id)
+            )
+            return cur.rowcount > 0
+
+    def delete_relationship(self, relationship_id: int) -> bool:
+        with self.connection() as conn:
+            cur = conn.execute("DELETE FROM relationships WHERE id = ?", (relationship_id,))
+            return cur.rowcount > 0
+
+    def infer_relationships(self) -> list[dict]:
+        items = [dict(r) for r in self.all_knowledge()]
+        existing_rels = {
+            (r["from_knowledge_id"], r["to_knowledge_id"])
+            for r in self.relationships()
+        }
+        discovered = []
+
+        for a in items:
+            for b in items:
+                if a["id"] == b["id"] or (a["id"], b["id"]) in existing_rels:
+                    continue
+                rel_type = None
+                # 1. Mention check: b concept mentioned in a explanation
+                b_clean = re.sub(r"\(.*?\)", "", b["concept"]).strip()
+                if len(b_clean) >= 3:
+                    pattern = r"\b" + re.escape(b_clean) + r"\b"
+                    if re.search(pattern, a["explanation"], re.IGNORECASE):
+                        rel_type = "mentions" if b["topic"] != a["topic"] else "depends_on"
+
+                # 2. Sub-concept check
+                if not rel_type and len(b_clean) >= 4 and b_clean.lower() != a["concept"].lower():
+                    if b_clean.lower() in a["concept"].lower():
+                        rel_type = "specialization_of"
+
+                # 3. Same topic significant word overlap
+                if not rel_type and a["topic"] == b["topic"]:
+                    a_words = set(re.findall(r"[a-z]{4,}", a["concept"].lower()))
+                    b_words = set(re.findall(r"[a-z]{4,}", b["concept"].lower()))
+                    stopwords = {"with", "from", "that", "this", "what", "have", "more"}
+                    if (a_words & b_words) - stopwords:
+                        rel_type = "related_to"
+
+                if rel_type:
+                    added = self.add_relationship(a["id"], b["id"], rel_type)
+                    if added:
+                        existing_rels.add((a["id"], b["id"]))
+                        discovered.append({
+                            "from_id": a["id"],
+                            "from_concept": a["concept"],
+                            "to_id": b["id"],
+                            "to_concept": b["concept"],
+                            "relation_type": rel_type
+                        })
+        return discovered

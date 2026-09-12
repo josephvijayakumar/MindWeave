@@ -33,10 +33,12 @@ class AgyProvider(LLMProvider):
             "- Miscellaneous"
         )
         system_instruction = (
-            "You are an assistant that analyzes learning-group discussions and creates structured knowledge proposals. "
+            "You are an expert knowledge extractor. Analyze the provided chat messages and extract valuable, enduring knowledge. "
             f"You must strictly organize knowledge according to the following taxonomy:\n{taxonomy}\n\n"
+            "You MUST create highly specific, atomic knowledge items. DO NOT group multiple terms or ideas (like 'Atomic', 'Idempotent', etc.) into a single broad concept like 'Programming'. "
+            "Instead, create a separate JSON object for EACH specific term, definition, or distinct idea discussed. "
             "The 'topic' field MUST be exactly one of the top-level categories (AI, Finance, Technology, or Miscellaneous). "
-            "The 'concept' field should be the specific subject discussed (ideally mapping to one of the predefined sub-topics if applicable). "
+            "The 'concept' field MUST be the specific, atomic subject discussed (e.g. 'Idempotent', 'Restoration', 'Pre-Policy Check Up'). "
             "You must return a JSON list of objects. Each object must have: topic, kind (CREATE, UPDATE, CONTRADICTION, QUESTION), "
             "concept, explanation, reason, source_message_ids (list of integers matching provided IDs), confidence (0-1), related_concepts (list of objects with 'concept' and 'type' string fields. e.g. type='depends_on', 'contrasts_with', 'related_to')."
         )
